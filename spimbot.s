@@ -77,21 +77,75 @@ main:
     mtc0    $t4, $12
 
     # GOING TO CAMP POSITION
-# Going down
+# Going up
     la $s0 bonk_flag                            # $s0 is the bonk_flag
     li $t0 10
     sw $t0 VELOCITY
     li $t0 1
+    sw $t0 ANGLE
 for_1:
     lb $t0 0($s0)
     beq $t0 1 exit_1                            # exit the loop once we've bonked
     jal solve_puzzle
     j for_1
 exit_1:
-    li $t0 2
-    sw $t0 SHOOT
+
+# Going east
+    li $t0 0
+    sw $t0 ANGLE
+
+    li $t0 10
+    sw $t0 VELOCITY
+
     li $t0 0
     sb $t0 0($s0)                               # reset the bonk flag
+
+for_2:
+    lb $t0 0($s0)
+    beq $t0 1 exit_2                            # exit the loop once we've bonked
+    jal solve_puzzle
+    j for_2
+exit_2:
+    li $t0 1
+    sw $t0 SHOOT
+
+# Going east again lol
+    li $t0 0
+    sw $t0 ANGLE
+
+    li $t0 10
+    sw $t0 VELOCITY
+
+    li $t0 0
+    sb $t0 0($s0)                               # reset the bonk flag
+
+for_3:
+    lb $t0 0($s0)
+    beq $t0 1 exit_3                            # exit the loop once we've bonked
+    jal solve_puzzle
+    j for_3
+exit_3:
+
+# go south
+    li $t0 3
+    sw $t0 ANGLE
+
+    li $t0 3
+    sw $t0 SHOOT
+
+    li $t0 10
+    sw $t0 VELOCITY
+
+    li $t0 0
+    sb $t0 0($s0)                               # reset the bonk flag
+
+for_4:
+    lb $t0 0($s0)
+    beq $t0 1 exit_4                            # exit the loop once we've bonked
+    jal solve_puzzle
+    j for_4
+exit_4:
+
 
 loop: # Once done, enter an infinite loop so that your bot can be graded by QtSpimbot once 10,000,000 cycles have elapsed
     j loop
