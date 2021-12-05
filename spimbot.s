@@ -75,42 +75,27 @@ main:
     or      $t4, $t4, REQUEST_PUZZLE_INT_MASK   # enable puzzle interrupt
     or      $t4, $t4, 1 # global enable
     mtc0    $t4, $12
-    
-    li $t1, 0
-    sw $t1, ANGLE
-    li $t1, 1
-    sw $t1, ANGLE_CONTROL
-    li $t2, 0
-    sw $t2, VELOCITY
-        
-    # YOUR CODE GOES HERE!!!!!!
-    li $s2 10
-    li $s5 0
-    jal solve_puzzle
 
-    li $t7 1
-    sw $t7 CHARGE_SHOT
-    li $t5 0
-for_one:
-    beq $t5 100000 end_for_one
-    add $t5 $t5 1
-    j for_one
-end_for_one:
-    li $s6 0
-for_two:
-    sw $s2 VELOCITY
-    bne $s6 1000 no_shoot
-    rem $s5 $s5 4
-    sw $s5 SHOOT
-    add $s5 $s5 1
-    li $s6 0
-no_shoot:
-    add $s6 $s6 1
-    j for_two
+    # GOING TO CAMP POSITION
+# Going down
+    la $s0 bonk_flag                            # $s0 is the bonk_flag
+    lu $t0 10
+    sw $t0 VELOCITY
+for_1:
+    lb $t0 0($s0)
+    beq $t0 1 exit_1                            # exit the loop once we've bonked
+    jal solve_puzzle
+    j for_1
+exit_1:
+
+    lu $t0 0
+    sb $t0 0($s0)                               # reset the bonk flag
+
+
 
 loop: # Once done, enter an infinite loop so that your bot can be graded by QtSpimbot once 10,000,000 cycles have elapsed
     j loop
-    
+
 solve_puzzle:
     sub $sp, $sp, 36
     sw  $ra, 0($sp)
@@ -122,9 +107,9 @@ solve_puzzle:
     sw $s5, 24($sp)
     sw $s6, 28($sp)
     sw $s7, 32($sp)
-    
+
     # INITIALIZATION
-    
+
     li $s0 0				# $s0 = i
     la $s1 puzzle			# $s1 = the address to puzzle
     la $s2 puzzle_flag  		# $s2 = the address to puzzle_flag
@@ -132,34 +117,34 @@ solve_puzzle:
     la $s4 solution			# $s4 = the address to the solution
 
 puzzle_for:
-    bge $s0 100 end_puzzle_for
-    
+    bge $s0 1 end_puzzle_for
+
     # here we want to request a puzzle!
     sw $s1 REQUEST_PUZZLE
-    
+
     # here, we wait for the puzzle. when it is finished, it will be stored in the puzzle's address
 request_while:
     lb $s3 0($s2)
     beq $s3 1 end_request_while
     j request_while
 end_request_while:
-    
+
     # now that we have the puzzle wrapper, we need to get the arguements to get the solution!
     add $a0 $s1 16
     move $a1 $s1
     move $a2 $s4
-    
+
     jal count_disjoint_regions
-    
+
     sw $s4 SUBMIT_SOLUTION
-    
+
     # AT THE END, RESET PUZZLE FLAG
     li $s3 0
     sb $s3 0($s2)
     add $s0 $s0 1
     j puzzle_for
 end_puzzle_for:
-    
+
     lw  $ra, 0($sp)
     lw $s0, 4($sp)
     lw $s1, 8($sp)
@@ -326,7 +311,7 @@ dl_end_for:
 
 
 flood_fill:
-	blt	$a0, $zero, ff_end	# row < 0 
+	blt	$a0, $zero, ff_end	# row < 0
 	blt	$a1, $zero, ff_end	# col < 0
 	lw	$t0, 0($a3)		    # $t0 = canvas->height
 	bge	$a0, $t0, ff_end	# row >= canvas->height
@@ -341,15 +326,15 @@ ff_recur:
 	lw	$t2, 0($t1)		    # $t2 = &char = char* = & canvas[row][0]
 	add	$t2, $a1, $t2		# $t2 = &canvas[row][col]
 	lb	$t3, 0($t2)		    # $t3 = curr
-	
+
 	lb	$t4, 8($a3)		    # $t4 = canvas->pattern
-	
-	beq	$t3, $t4, ff_end	# curr == canvas->pattern : break 
+
+	beq	$t3, $t4, ff_end	# curr == canvas->pattern : break
 	beq	$t3, $a2, ff_end	# curr == marker          : break
-	
+
 	#FLOODFILL
-	sb	$a2, ($t2) 
-	
+	sb	$a2, ($t2)
+
 	# Save depenedecies
 	sub	$sp, $sp, 12
 	sw	$ra, 0($sp)
@@ -357,7 +342,7 @@ ff_recur:
 	sw	$s1, 8($sp)
 	move	$s0, $a0
 	move	$s1, $a1
-	
+
 	sub	$a0, $s0, 1
 	move	$a1, $s1
 	jal	flood_fill
@@ -373,7 +358,7 @@ ff_recur:
 	move	$a0, $s0
 	sub	$a1, $s1, 1
 	jal	flood_fill
-	
+
 	# Restore VARS
 	lw	$ra, 0($sp)
 	lw	$s0, 4($sp)
@@ -396,7 +381,7 @@ count_disjoint_regions_step:
     move    $s0, $a0
     move    $s1, $a1
 	li	    $s2, 0			    # unsigned int region_count = 0;
-        
+
     li      $s3, 0              # row = 0
 cdrs_outer_loop:                # for (unsigned int row = 0; row < canvas->height; row++) {
     lw      $t0, 0($s1)         # canvas->height
@@ -406,7 +391,7 @@ cdrs_outer_loop:                # for (unsigned int row = 0; row < canvas->heigh
 cdrs_inner_loop:                # for (unsigned int col = 0; col < canvas->width; col++) {
     lw      $t0, 4($s1)         # canvas->width
     bge     $s4, $t0, cdrs_end_inner_loop   # col < canvas->width : fallthrough
-        
+
     # unsigned char curr_char = canvas->canvas[row][col];
     lw      $t1, 12($s1)        # &(canvas->canvas)
     mul     $t2, $s3, 4         # $t2 = row * 4
@@ -415,21 +400,21 @@ cdrs_inner_loop:                # for (unsigned int col = 0; col < canvas->width
     add	$t1, $s4, $t1           # $t1 = &canvas[row][col]
     lb	$t1, 0($t1)		        # $t1 = canvas[row][col] = curr_char
 
-    lb      $t2, 8($s1)         # $t2 = canvas->pattern 
+    lb      $t2, 8($s1)         # $t2 = canvas->pattern
 
     # temps:        $t1 = curr_char         $t2 = canvas->pattern
 
     # if (curr_char != canvas->pattern && curr_char != marker) {
     beq     $t1, $t2, cdrs_endif    # if (curr_char != canvas->pattern) fall
     beq	$t1, $s0, cdrs_endif        # if (curr_char != marker)          fall
-    
+
     add     $s2, $s2, 1         # region_count ++;
     move    $a0, $s3            # (row,
     move    $a1, $s4            #  col,
     move    $a2, $s0            #  marker,
     move    $a3, $s1            #  canvas);
     jal     flood_fill          # flood_fill(row, col, marker, canvas);
- 
+
 cdrs_endif:
     add     $s4, $s4, 1         # col++
     j       cdrs_inner_loop     # loop again
@@ -468,7 +453,7 @@ count_disjoint_regions:
 cdr_loop:
     lw	    $t0, 0($s0)		        # $t0 = lines->num_lines
     bge     $s3, $t0, cdr_end       # i < lines->num_lines : fallthrough
-        
+
     #lines->coords[0][i];
     lw	$t1, 4($s0)		# $t1 = &(lines->coords[0][0])
     lw	$t2, 8($s0)		# $t2 = &(lines->coords[1][0])
